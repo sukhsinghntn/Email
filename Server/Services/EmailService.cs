@@ -73,12 +73,11 @@ namespace DynamicFormsApp.Server.Services
             await client.SendMailAsync(mail);
         }
 
-        public async Task SendFormShareNotification(string toEmail, string firstName, string formName, string? description, int formId, string sharedBy)
+        public async Task SendFormShareNotification(string toEmail, string firstName, string formName, string? description, int formId, string sharedBy, string ownerEmail)
         {
             var baseUrl = _configuration["AppBaseUrl"]?.TrimEnd('/') ?? string.Empty;
             var formLink = $"{baseUrl}/forms/{formId}";
 
-            var support = _configuration["Email:Support"] ?? _configuration["Email:From"] ?? "support@example.com";
 
             var greeting = string.IsNullOrWhiteSpace(firstName) ? "Hello" : $"Hi {firstName}";
 
@@ -86,7 +85,7 @@ namespace DynamicFormsApp.Server.Services
 
             var mail = new MailMessage
             {
-                From = new MailAddress(_configuration["Email:From"] ?? "noreply@example.com"),
+                From = new MailAddress(string.IsNullOrWhiteSpace(ownerEmail) ? (_configuration["Email:From"] ?? "noreply@example.com") : ownerEmail),
                 Subject = $"{sharedBy} shared a form with you",
                 Body = $@"<div style='font-family:sans-serif;font-size:14px;line-height:1.5'>
                             <p>{greeting},</p>
@@ -95,7 +94,7 @@ namespace DynamicFormsApp.Server.Services
                             <p style='text-align:center;margin:20px 0'>
                                 <a href='{formLink}' style='display:inline-block;padding:10px 20px;background-color:#007bff;color:#fff;text-decoration:none;border-radius:4px'>👉 View the Form</a>
                             </p>
-                            <p>If you have any questions, contact us at <a href='mailto:{support}'>{support}</a>.</p>
+                            <p>If you have any questions, contact me at <a href='mailto:{ownerEmail}'>{ownerEmail}</a>.</p>
                             <p style='font-size:12px;color:#555'>If you weren\u2019t expecting this, ignore this email or contact us.</p>
                         </div>",
                 IsBodyHtml = true
