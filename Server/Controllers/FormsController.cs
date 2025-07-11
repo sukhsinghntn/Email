@@ -85,6 +85,24 @@ namespace DynamicFormsApp.Server.Controllers
             return Ok(row);
         }
 
+        [HttpGet("{id}/responses/{responseId}/neighbors")]
+        public async Task<ActionResult> GetResponseNeighbors(int id, int responseId)
+        {
+            if (!Request.Cookies.TryGetValue("userName", out var user) || string.IsNullOrEmpty(user))
+            {
+                return Unauthorized();
+            }
+
+            var form = await _svc.GetFormAsync(id);
+            if (!form.IsActive && form.CreatedBy != user)
+            {
+                return await FormUnavailable(form);
+            }
+
+            var (prev, next) = await _svc.GetAdjacentResponseIdsAsync(id, responseId, user);
+            return Ok(new { previous = prev, next });
+        }
+
 
         // GET /api/forms/{id}
         [HttpGet("{id}")]
