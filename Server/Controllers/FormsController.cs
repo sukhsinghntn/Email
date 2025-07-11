@@ -67,6 +67,18 @@ namespace DynamicFormsApp.Server.Controllers
             return Ok(rows);
         }
 
+        [HttpGet("{id}/responseIds")]
+        public async Task<ActionResult<List<int>>> GetResponseIds(int id)
+        {
+            if (!Request.Cookies.TryGetValue("userName", out var user) || string.IsNullOrEmpty(user))
+            {
+                return Unauthorized();
+            }
+
+            var ids = await _svc.GetResponseIdsAsync(id, user);
+            return Ok(ids);
+        }
+
         [HttpGet("{id}/responses/{responseId}")]
         public async Task<ActionResult<Dictionary<string, object>>> GetResponse(int id, int responseId)
         {
@@ -216,6 +228,18 @@ namespace DynamicFormsApp.Server.Controllers
             }
 
             await _svc.ShareFormAsync(id, user, dto.UserName);
+
+            var target = await _userSvc.GetUserData(dto.UserName);
+            var form = await _svc.GetFormAsync(id);
+            var sender = await _userSvc.GetUserData(user);
+            var sharedBy = sender?.DisplayName ?? user;
+            if (target != null && !string.IsNullOrEmpty(target.Email))
+            {
+                var firstName = target.DisplayName?.Split(' ').FirstOrDefault() ?? target.UserName;
+                var ownerEmail = sender?.Email ?? string.Empty;
+                await _emailSvc.SendFormShareNotification(target.Email, firstName, form.Name, form.Description, form.Id, sharedBy, ownerEmail);
+            }
+
             return NoContent();
         }
 

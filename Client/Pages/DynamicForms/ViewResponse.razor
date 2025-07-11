@@ -30,6 +30,19 @@
     <button class="btn btn-outline-info me-2" @onclick="DownloadCsv">Download CSV</button>
     <button class="btn btn-outline-info" @onclick="DownloadExcel">Download Excel</button>
 </div>
+@if (PrevId.HasValue || NextId.HasValue)
+{
+    <div class="mb-3">
+        @if (PrevId.HasValue)
+        {
+            <a class="btn btn-outline-secondary me-2" href="@($"/forms/{FormId}/responses/{PrevId.Value}")">&laquo; Prev</a>
+        }
+        @if (NextId.HasValue)
+        {
+            <a class="btn btn-outline-secondary" href="@($"/forms/{FormId}/responses/{NextId.Value}")">Next &raquo;</a>
+        }
+    </div>
+}
 
 @if (form == null || response == null)
 {
@@ -77,9 +90,20 @@ else
 
     private Form? form;
     private Dictionary<string, object>? response;
+    private List<int>? responseIds;
     private string? responderName;
     private IJSObjectReference? exportModule;
     private string? deletedMessage;
+
+    int? PrevId =>
+        responseIds != null && responseIds.IndexOf(ResponseId) > 0
+            ? responseIds[responseIds.IndexOf(ResponseId) - 1]
+            : null;
+
+    int? NextId =>
+        responseIds != null && responseIds.IndexOf(ResponseId) >= 0 && responseIds.IndexOf(ResponseId) < responseIds.Count - 1
+            ? responseIds[responseIds.IndexOf(ResponseId) + 1]
+            : null;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -111,6 +135,7 @@ else
             }
 
             form = await respForm.Content.ReadFromJsonAsync<Form>();
+            responseIds = await Http.GetFromJsonAsync<List<int>>($"api/forms/{FormId}/responseIds");
 
             var resp = await Http.GetAsync($"api/forms/{FormId}/responses/{ResponseId}");
             if (!resp.IsSuccessStatusCode)
