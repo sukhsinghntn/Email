@@ -33,7 +33,7 @@ namespace DynamicFormsApp.Server.Controllers
         [HttpPost("formshare")]
         public async Task<IActionResult> SendFormShareEmail([FromBody] FormShareNotification model)
         {
-            await _emailService.SendFormShareNotification(model.toEmail, model.formName, model.formId, model.sharedBy);
+            await _emailService.SendFormShareNotification(model.toEmail, model.firstName, model.formName, model.description, model.formId, model.sharedBy);
             return Ok();
         }
 
@@ -47,7 +47,9 @@ namespace DynamicFormsApp.Server.Controllers
         public class FormShareNotification
         {
             public string toEmail { get; set; }
+            public string firstName { get; set; }
             public string formName { get; set; }
+            public string? description { get; set; }
             public int formId { get; set; }
             public string sharedBy { get; set; }
         }

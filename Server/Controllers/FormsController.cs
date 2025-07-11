@@ -223,7 +223,8 @@ namespace DynamicFormsApp.Server.Controllers
             var sharedBy = sender?.DisplayName ?? user;
             if (target != null && !string.IsNullOrEmpty(target.Email))
             {
-                await _emailSvc.SendFormShareNotification(target.Email, form.Name, form.Id, sharedBy);
+                var firstName = target.DisplayName?.Split(' ').FirstOrDefault() ?? target.UserName;
+                await _emailSvc.SendFormShareNotification(target.Email, firstName, form.Name, form.Description, form.Id, sharedBy);
             }
 
             return NoContent();
