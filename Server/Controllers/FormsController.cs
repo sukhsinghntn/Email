@@ -216,6 +216,18 @@ namespace DynamicFormsApp.Server.Controllers
             }
 
             await _svc.ShareFormAsync(id, user, dto.UserName);
+
+            var target = await _userSvc.GetUserData(dto.UserName);
+            var form = await _svc.GetFormAsync(id);
+            var sender = await _userSvc.GetUserData(user);
+            var sharedBy = sender?.DisplayName ?? user;
+            if (target != null && !string.IsNullOrEmpty(target.Email))
+            {
+                var firstName = target.DisplayName?.Split(' ').FirstOrDefault() ?? target.UserName;
+                var ownerEmail = sender?.Email ?? string.Empty;
+                await _emailSvc.SendFormShareNotification(target.Email, firstName, form.Name, form.Description, form.Id, sharedBy, ownerEmail);
+            }
+
             return NoContent();
         }
 
