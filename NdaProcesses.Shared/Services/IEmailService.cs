@@ -7,6 +7,6 @@ namespace DynamicFormsApp.Shared.Services
     {
         Task SendBugReportEmail(EmailModel email);
         Task SendFormResponseNotification(string toEmail, string formName, int formId);
-        Task SendFormShareNotification(string toEmail, string formName, int formId);
+        Task SendFormShareNotification(string toEmail, string formName, int formId, string sharedBy);
     }
 }

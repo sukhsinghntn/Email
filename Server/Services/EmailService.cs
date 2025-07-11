@@ -73,7 +73,7 @@ namespace DynamicFormsApp.Server.Services
             await client.SendMailAsync(mail);
         }
 
-        public async Task SendFormShareNotification(string toEmail, string formName, int formId)
+        public async Task SendFormShareNotification(string toEmail, string formName, int formId, string sharedBy)
         {
             var baseUrl = _configuration["AppBaseUrl"]?.TrimEnd('/') ?? string.Empty;
             var formLink = $"{baseUrl}/forms/{formId}";
@@ -81,9 +81,15 @@ namespace DynamicFormsApp.Server.Services
             var mail = new MailMessage
             {
                 From = new MailAddress(_configuration["Email:From"] ?? "noreply@example.com"),
-                Subject = $"A form '{formName}' has been shared with you",
-                Body = $@"<p style='font-family:sans-serif;font-size:14px'>The form <strong>{formName}</strong> has been shared with you.</p>
-                        <p><a href='{formLink}' style='display:inline-block;padding:8px 12px;background-color:#007bff;color:#fff;text-decoration:none;border-radius:4px'>Open Form</a></p>",
+                Subject = $"{sharedBy} shared a form with you",
+                Body = $@"<div style='font-family:sans-serif;font-size:14px'>
+                            <p><strong>{sharedBy}</strong> has shared the form <strong>{formName}</strong> with you.</p>
+                            <p style='text-align:center'>
+                                <a href='{formLink}' style='display:inline-block;padding:10px 15px;background-color:#007bff;color:#fff;text-decoration:none;border-radius:4px'>Open Form</a>
+                            </p>
+                            <hr style='border:none;border-top:1px solid #ddd'/>
+                            <p style='font-size:12px;color:#555'>This is an automated message, please do not reply.</p>
+                        </div>",
                 IsBodyHtml = true
             };
 
