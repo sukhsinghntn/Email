@@ -72,5 +72,28 @@ namespace DynamicFormsApp.Server.Services
             };
             await client.SendMailAsync(mail);
         }
+
+        public async Task SendFormShareNotification(string toEmail, string formName, int formId)
+        {
+            var baseUrl = _configuration["AppBaseUrl"]?.TrimEnd('/') ?? string.Empty;
+            var formLink = $"{baseUrl}/forms/{formId}";
+
+            var mail = new MailMessage
+            {
+                From = new MailAddress(_configuration["Email:From"] ?? "noreply@example.com"),
+                Subject = $"A form '{formName}' has been shared with you",
+                Body = $@"<p style='font-family:sans-serif;font-size:14px'>The form <strong>{formName}</strong> has been shared with you.</p>
+                        <p><a href='{formLink}' style='display:inline-block;padding:8px 12px;background-color:#007bff;color:#fff;text-decoration:none;border-radius:4px'>Open Form</a></p>",
+                IsBodyHtml = true
+            };
+
+            mail.To.Add(toEmail);
+
+            using var client = new SmtpClient(_configuration["Email:IP"])
+            {
+                Port = int.Parse(_configuration["Email:Port"]!)
+            };
+            await client.SendMailAsync(mail);
+        }
     }
 }

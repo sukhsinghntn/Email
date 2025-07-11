@@ -30,7 +30,21 @@ namespace DynamicFormsApp.Server.Controllers
             return Ok();
         }
 
+        [HttpPost("formshare")]
+        public async Task<IActionResult> SendFormShareEmail([FromBody] FormShareNotification model)
+        {
+            await _emailService.SendFormShareNotification(model.toEmail, model.formName, model.formId);
+            return Ok();
+        }
+
         public class FormResponseNotification
+        {
+            public string toEmail { get; set; }
+            public string formName { get; set; }
+            public int formId { get; set; }
+        }
+
+        public class FormShareNotification
         {
             public string toEmail { get; set; }
             public string formName { get; set; }
