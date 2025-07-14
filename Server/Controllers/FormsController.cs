@@ -3,6 +3,7 @@ using DynamicFormsApp.Shared.Models;
 using DynamicFormsApp.Shared.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
+using System;
 using System.Threading.Tasks;
 
 namespace DynamicFormsApp.Server.Controllers
@@ -65,6 +66,18 @@ namespace DynamicFormsApp.Server.Controllers
 
             var rows = await _svc.GetResponsesAsync(id, user);
             return Ok(rows);
+        }
+
+        [HttpGet("{id}/responseIds")]
+        public async Task<ActionResult<List<int>>> GetResponseIds(int id)
+        {
+            if (!Request.Cookies.TryGetValue("userName", out var user) || string.IsNullOrEmpty(user))
+            {
+                return Unauthorized();
+            }
+
+            var ids = await _svc.GetResponseIdsAsync(id, user);
+            return Ok(ids);
         }
 
         [HttpGet("{id}/responses/{responseId}")]
@@ -170,6 +183,24 @@ namespace DynamicFormsApp.Server.Controllers
             return Ok(shared);
         }
 
+        [HttpGet("deleted")]
+        public async Task<ActionResult<IEnumerable<Form>>> GetDeleted()
+        {
+            if (!Request.Cookies.TryGetValue("userName", out var user) || string.IsNullOrEmpty(user))
+            {
+                return Unauthorized();
+            }
+
+            var info = await _userSvc.GetUserData(user);
+            if (!string.Equals(info?.Department, "Information Technology", StringComparison.OrdinalIgnoreCase))
+            {
+                return Unauthorized();
+            }
+
+            var forms = await _svc.GetDeletedFormsAsync();
+            return Ok(forms);
+        }
+
         // DELETE /api/forms/{id}
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
@@ -207,6 +238,24 @@ namespace DynamicFormsApp.Server.Controllers
             return NoContent();
         }
 
+        [HttpPost("{id}/restore")]
+        public async Task<IActionResult> Restore(int id)
+        {
+            if (!Request.Cookies.TryGetValue("userName", out var user) || string.IsNullOrEmpty(user))
+            {
+                return Unauthorized();
+            }
+
+            var info = await _userSvc.GetUserData(user);
+            if (!string.Equals(info?.Department, "Information Technology", StringComparison.OrdinalIgnoreCase))
+            {
+                return Unauthorized();
+            }
+
+            await _svc.RestoreFormAsync(id);
+            return NoContent();
+        }
+
         [HttpPost("{id}/share")]
         public async Task<IActionResult> Share(int id, [FromBody] ShareFormDto dto)
         {
@@ -216,6 +265,18 @@ namespace DynamicFormsApp.Server.Controllers
             }
 
             await _svc.ShareFormAsync(id, user, dto.UserName);
+
+            var target = await _userSvc.GetUserData(dto.UserName);
+            var form = await _svc.GetFormAsync(id);
+            var sender = await _userSvc.GetUserData(user);
+            var sharedBy = sender?.DisplayName ?? user;
+            if (target != null && !string.IsNullOrEmpty(target.Email))
+            {
+                var firstName = target.DisplayName?.Split(' ').FirstOrDefault() ?? target.UserName;
+                var ownerEmail = sender?.Email ?? string.Empty;
+                await _emailSvc.SendFormShareNotification(target.Email, firstName, form.Name, form.Description, form.Id, sharedBy, ownerEmail);
+            }
+
             return NoContent();
         }
 

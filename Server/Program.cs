@@ -6,6 +6,7 @@ using DynamicFormsApp.Server.Services;
 using DynamicFormsApp.Server.Data;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.Negotiate;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,6 +48,12 @@ builder.Services.AddControllers();
 builder.Services.AddRadzenComponents();
 builder.Services.AddHttpClient();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme)
+       .AddNegotiate();
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = options.DefaultPolicy;
+});
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 var app = builder.Build();
@@ -65,6 +72,8 @@ else
 
 app.UseHttpsRedirection();
 app.UseResponseCompression();
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 app.UseStaticFiles();
 app.UseAntiforgery();
