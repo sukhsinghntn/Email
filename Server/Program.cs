@@ -7,6 +7,7 @@ using DynamicFormsApp.Server.Data;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.Negotiate;
+using Microsoft.AspNetCore.Server.IISIntegration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,8 +49,15 @@ builder.Services.AddControllers();
 builder.Services.AddRadzenComponents();
 builder.Services.AddHttpClient();
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme)
-       .AddNegotiate();
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme)
+           .AddNegotiate();
+}
+else
+{
+    builder.Services.AddAuthentication(IISDefaults.AuthenticationScheme);
+}
 builder.Services.AddAuthorization(options =>
 {
     options.FallbackPolicy = options.DefaultPolicy;
