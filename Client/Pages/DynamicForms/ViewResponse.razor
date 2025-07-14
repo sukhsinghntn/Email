@@ -2,6 +2,7 @@
 @using System.Net.Http.Json
 @using System.Net
 @using System.Text.Json
+@using System.Linq
 @using DynamicFormsApp.Shared.Models
 @inject HttpClient Http
 @inject NavigationManager Navigation
@@ -30,6 +31,30 @@
     <button class="btn btn-outline-info me-2" @onclick="DownloadCsv">Download CSV</button>
     <button class="btn btn-outline-info" @onclick="DownloadExcel">Download Excel</button>
 </div>
+@if (responseIds != null && responseIds.Count > 0)
+{
+    <div class="mb-3">
+        @if (PrevId.HasValue)
+        {
+            <a class="btn btn-outline-secondary me-2" href="@($"/forms/{FormId}/responses/{PrevId.Value}")">&laquo; Prev</a>
+        }
+        @foreach (var id in DisplayIds)
+        {
+            if (id == ResponseId)
+            {
+                <span class="btn btn-primary me-1">@id</span>
+            }
+            else
+            {
+                <a class="btn btn-outline-secondary me-1" href="@($"/forms/{FormId}/responses/{id}")">@id</a>
+            }
+        }
+        @if (NextId.HasValue)
+        {
+            <a class="btn btn-outline-secondary" href="@($"/forms/{FormId}/responses/{NextId.Value}")">Next &raquo;</a>
+        }
+    </div>
+}
 
 @if (form == null || response == null)
 {
@@ -77,55 +102,83 @@ else
 
     private Form? form;
     private Dictionary<string, object>? response;
+    private List<int>? responseIds;
     private string? responderName;
     private IJSObjectReference? exportModule;
     private string? deletedMessage;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    int? PrevId =>
+        responseIds != null && responseIds.IndexOf(ResponseId) > 0
+            ? responseIds[responseIds.IndexOf(ResponseId) - 1]
+            : null;
+
+    int? NextId =>
+        responseIds != null && responseIds.IndexOf(ResponseId) >= 0 && responseIds.IndexOf(ResponseId) < responseIds.Count - 1
+            ? responseIds[responseIds.IndexOf(ResponseId) + 1]
+            : null;
+
+    IEnumerable<int> DisplayIds
     {
-        if (firstRender)
+        get
         {
-            var user = await CookieHelper.LoginStatus();
-            if (string.IsNullOrEmpty(user))
-            {
-                var ret = Uri.EscapeDataString(Navigation.ToBaseRelativePath(Navigation.Uri));
-                Navigation.NavigateTo($"login?returnUrl={ret}", true);
-                return;
-            }
+            if (responseIds == null || responseIds.Count == 0)
+                return Array.Empty<int>();
+            var index = responseIds.IndexOf(ResponseId);
+            if (index < 0) index = 0;
+            var start = Math.Max(0, index - 2);
+            if (start + 5 > responseIds.Count)
+                start = Math.Max(0, responseIds.Count - 5);
+            return responseIds.Skip(start).Take(5);
+        }
+    }
 
+    protected override async Task OnParametersSetAsync()
+    {
+        var user = await CookieHelper.LoginStatus();
+        if (string.IsNullOrEmpty(user))
+        {
+            var ret = Uri.EscapeDataString(Navigation.ToBaseRelativePath(Navigation.Uri));
+            Navigation.NavigateTo($"login?returnUrl={ret}", true);
+            return;
+        }
 
-            var respForm = await Http.GetAsync($"api/forms/{FormId}");
-            if (!respForm.IsSuccessStatusCode)
+        var respForm = await Http.GetAsync($"api/forms/{FormId}");
+        if (!respForm.IsSuccessStatusCode)
+        {
+            if (respForm.StatusCode == HttpStatusCode.Gone)
             {
-                if (respForm.StatusCode == HttpStatusCode.Gone)
-                {
-                    var info = await respForm.Content.ReadFromJsonAsync<DeletedFormInfo>();
-                    deletedMessage = $"{info?.Message} Contact {info?.Owner} ({info?.Email}).";
-                }
-                else
-                {
-                    deletedMessage = "Form not found.";
-                }
-                StateHasChanged();
-                return;
+                var info = await respForm.Content.ReadFromJsonAsync<DeletedFormInfo>();
+                deletedMessage = $"{info?.Message} Contact {info?.Owner} ({info?.Email}).";
             }
+            else
+            {
+                deletedMessage = "Form not found.";
+            }
+            form = null;
+            response = null;
+            responseIds = null;
+            return;
+        }
 
-            form = await respForm.Content.ReadFromJsonAsync<Form>();
+        form = await respForm.Content.ReadFromJsonAsync<Form>();
+        responseIds = await Http.GetFromJsonAsync<List<int>>($"api/forms/{FormId}/responseIds");
 
-            var resp = await Http.GetAsync($"api/forms/{FormId}/responses/{ResponseId}");
-            if (!resp.IsSuccessStatusCode)
-            {
-                deletedMessage = "Response not found.";
-                StateHasChanged();
-                return;
-            }
-            response = await resp.Content.ReadFromJsonAsync<Dictionary<string, object>>();
-            if (response.TryGetValue("ResponderName", out var respName))
-            {
-                responderName = respName?.ToString();
-            }
+        var resp = await Http.GetAsync($"api/forms/{FormId}/responses/{ResponseId}");
+        if (!resp.IsSuccessStatusCode)
+        {
+            deletedMessage = "Response not found.";
+            response = null;
+            return;
+        }
+        response = await resp.Content.ReadFromJsonAsync<Dictionary<string, object>>();
+        if (response.TryGetValue("ResponderName", out var respName))
+        {
+            responderName = respName?.ToString();
+        }
+
+        if (exportModule == null)
+        {
             exportModule = await JS.InvokeAsync<IJSObjectReference>("import", "/js/exportHelper.js");
-            StateHasChanged();
         }
     }
 
