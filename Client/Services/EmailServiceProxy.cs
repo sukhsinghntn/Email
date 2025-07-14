@@ -25,5 +25,11 @@ namespace DynamicFormsApp.Client.Services
             var payload = new { toEmail, formName, formId };
             await _httpClient.PostAsJsonAsync("api/email/formresponse", payload);
         }
+
+        public async Task SendFormShareNotification(string toEmail, string firstName, string formName, string? description, int formId, string sharedBy, string ownerEmail)
+        {
+            var payload = new { toEmail, firstName, formName, description, formId, sharedBy, ownerEmail };
+            await _httpClient.PostAsJsonAsync("api/email/formshare", payload);
+        }
     }
 }
