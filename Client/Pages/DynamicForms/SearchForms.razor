@@ -6,7 +6,8 @@
 
 <h3 class="mb-3">Search Forms</h3>
 
-<input class="form-control mb-3" placeholder="Search..." @bind="searchTerm" />
+<input class="form-control mb-3" placeholder="Search..."
+       @bind-value="searchTerm" @bind-value:event="oninput" />
 
 @if (forms == null)
 {
