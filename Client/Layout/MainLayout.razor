@@ -62,7 +62,12 @@
                 <RadzenPanelMenuItem Text="Create Form" Path="forms/new" Icon="add_box" />
                 <RadzenPanelMenuItem Text="My Forms" Path="myforms" Icon="list" />
                 <RadzenPanelMenuItem Text="Drafts" Path="draftforms" Icon="drafts" />
-                <RadzenPanelMenuItem Text="Shared With Me" Path="sharedforms" Icon="share" /> }
+                <RadzenPanelMenuItem Text="Shared With Me" Path="sharedforms" Icon="share" />
+                @if (ValidUser?.Department != null && ValidUser.Department.Equals("Information Technology", StringComparison.OrdinalIgnoreCase))
+                {
+                    <RadzenPanelMenuItem Text="Admin" Path="admin/deletedforms" Icon="admin_panel_settings" />
+                }
+            }
             <RadzenPanelMenuItem Text="Search Forms" Path="forms/search" Icon="search" />
         </RadzenPanelMenu>
 

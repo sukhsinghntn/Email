@@ -289,6 +289,18 @@ namespace DynamicFormsApp.Server.Services
             await _db.SaveChangesAsync();
         }
 
+        public async Task RestoreFormAsync(int formId)
+        {
+            var form = await _db.Forms.FirstOrDefaultAsync(f => f.Id == formId);
+            if (form == null)
+            {
+                throw new InvalidOperationException("Form not found");
+            }
+
+            form.IsDeleted = false;
+            await _db.SaveChangesAsync();
+        }
+
         public async Task ActivateFormAsync(int formId, string user)
         {
             var form = await _db.Forms.FirstOrDefaultAsync(f => f.Id == formId && f.CreatedBy == user);
@@ -306,6 +318,14 @@ namespace DynamicFormsApp.Server.Services
             return await _db.Forms
                 .Include(f => f.Fields)
                 .Where(f => f.IsActive && !f.IsDraft && !f.IsDeleted)
+                .ToListAsync();
+        }
+
+        public async Task<List<Form>> GetDeletedFormsAsync()
+        {
+            return await _db.Forms
+                .Include(f => f.Fields)
+                .Where(f => f.IsDeleted)
                 .ToListAsync();
         }
 

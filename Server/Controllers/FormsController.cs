@@ -3,6 +3,7 @@ using DynamicFormsApp.Shared.Models;
 using DynamicFormsApp.Shared.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
+using System;
 using System.Threading.Tasks;
 
 namespace DynamicFormsApp.Server.Controllers
@@ -182,6 +183,24 @@ namespace DynamicFormsApp.Server.Controllers
             return Ok(shared);
         }
 
+        [HttpGet("deleted")]
+        public async Task<ActionResult<IEnumerable<Form>>> GetDeleted()
+        {
+            if (!Request.Cookies.TryGetValue("userName", out var user) || string.IsNullOrEmpty(user))
+            {
+                return Unauthorized();
+            }
+
+            var info = await _userSvc.GetUserData(user);
+            if (!string.Equals(info?.Department, "Information Technology", StringComparison.OrdinalIgnoreCase))
+            {
+                return Unauthorized();
+            }
+
+            var forms = await _svc.GetDeletedFormsAsync();
+            return Ok(forms);
+        }
+
         // DELETE /api/forms/{id}
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
@@ -216,6 +235,24 @@ namespace DynamicFormsApp.Server.Controllers
             }
 
             await _svc.ActivateFormAsync(id, user);
+            return NoContent();
+        }
+
+        [HttpPost("{id}/restore")]
+        public async Task<IActionResult> Restore(int id)
+        {
+            if (!Request.Cookies.TryGetValue("userName", out var user) || string.IsNullOrEmpty(user))
+            {
+                return Unauthorized();
+            }
+
+            var info = await _userSvc.GetUserData(user);
+            if (!string.Equals(info?.Department, "Information Technology", StringComparison.OrdinalIgnoreCase))
+            {
+                return Unauthorized();
+            }
+
+            await _svc.RestoreFormAsync(id);
             return NoContent();
         }
 
