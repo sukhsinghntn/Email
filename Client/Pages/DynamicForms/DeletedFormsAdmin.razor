@@ -8,11 +8,13 @@
 
 <h3>Deleted Forms</h3>
 
+<input class="form-control mb-3" placeholder="Search..." @bind="searchTerm" />
+
 @if (forms == null)
 {
     <p>Loading...</p>
 }
-else if (!forms.Any())
+else if (!FilteredForms.Any())
 {
     <p>No deleted forms found.</p>
 }
@@ -29,7 +31,7 @@ else
                 </tr>
             </thead>
             <tbody>
-                @foreach (var f in forms)
+                @foreach (var f in FilteredForms)
                 {
                     <tr>
                         <td>@f.Name</td>
@@ -48,6 +50,15 @@ else
 
 @code {
     private List<Form>? forms;
+    private string searchTerm = string.Empty;
+
+    private IEnumerable<Form> FilteredForms => string.IsNullOrWhiteSpace(searchTerm)
+        ? forms ?? Enumerable.Empty<Form>()
+        : forms?.Where(f =>
+            (f.Name?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            (f.Description?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            (f.CreatedBy?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false))
+            ?? Enumerable.Empty<Form>();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

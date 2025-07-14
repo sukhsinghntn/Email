@@ -24,6 +24,7 @@ else
                 <tr>
                     <th>Name</th>
                     <th>Description</th>
+                    <th>Owner</th>
                     <th></th>
                 </tr>
             </thead>
@@ -33,6 +34,7 @@ else
                     <tr>
                         <td>@f.Name</td>
                         <td>@f.Description</td>
+                        <td>@f.CreatedBy</td>
                         <td>
                             <a class="btn btn-sm btn-primary" href="@($"/forms/{f.Id}")">Open</a>
                         </td>
@@ -51,7 +53,8 @@ else
         ? forms ?? Enumerable.Empty<Form>()
         : forms?.Where(f =>
             (f.Name?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
-            (f.Description?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false))
+            (f.Description?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            (f.CreatedBy?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false))
             ?? Enumerable.Empty<Form>();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
