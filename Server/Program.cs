@@ -49,15 +49,9 @@ builder.Services.AddControllers();
 builder.Services.AddRadzenComponents();
 builder.Services.AddHttpClient();
 builder.Services.AddHttpContextAccessor();
-if (builder.Environment.IsDevelopment())
-{
-    builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme)
-           .AddNegotiate();
-}
-else
-{
-    builder.Services.AddAuthentication(IISDefaults.AuthenticationScheme);
-}
+builder.Services
+    .AddAuthentication(NegotiateDefaults.AuthenticationScheme)
+    .AddNegotiate();
 builder.Services.AddAuthorization(options =>
 {
     options.FallbackPolicy = options.DefaultPolicy;
