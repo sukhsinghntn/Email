@@ -1,0 +1,7 @@
+@page "/forms/{FormId:int}/submitted"
+<h3>Thank you!</h3>
+<p>Your submission has been received.</p>
+<a class="btn btn-primary" href="/">Return Home</a>
+@code {
+    [Parameter] public int FormId { get; set; }
+}

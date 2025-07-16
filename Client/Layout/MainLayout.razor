@@ -40,6 +40,11 @@
                 </RadzenStack>
             </RadzenColumn>
         </RadzenRow>
+        <RadzenRow>
+            <RadzenColumn Size="12">
+                <BreadcrumbNav />
+            </RadzenColumn>
+        </RadzenRow>
     </RadzenHeader>
 
     <!-- Sidebar section of the layout -->
@@ -57,7 +62,12 @@
                 <RadzenPanelMenuItem Text="Create Form" Path="forms/new" Icon="add_box" />
                 <RadzenPanelMenuItem Text="My Forms" Path="myforms" Icon="list" />
                 <RadzenPanelMenuItem Text="Drafts" Path="draftforms" Icon="drafts" />
-                <RadzenPanelMenuItem Text="Shared With Me" Path="sharedforms" Icon="share" /> }
+                <RadzenPanelMenuItem Text="Shared With Me" Path="sharedforms" Icon="share" />
+                @if (ValidUser?.Department != null && ValidUser.Department.Equals("Information Technology", StringComparison.OrdinalIgnoreCase))
+                {
+                    <RadzenPanelMenuItem Text="Admin" Path="admin/deletedforms" Icon="admin_panel_settings" />
+                }
+            }
             <RadzenPanelMenuItem Text="Search Forms" Path="forms/search" Icon="search" />
         </RadzenPanelMenu>
 
@@ -197,7 +207,17 @@
         string userId = await CookieHelper.LoginStatus();
         if (string.IsNullOrEmpty(userId))
         {
-            username = null;
+            userId = await UserService.GetCurrentUser();
+            if (!string.IsNullOrEmpty(userId))
+            {
+                await CookieHelper.LoginUser(userId);
+                ValidUser = await UserService.GetUserData(userId);
+                username = ValidUser.DisplayName;
+            }
+            else
+            {
+                username = null;
+            }
         }
         else
         {
