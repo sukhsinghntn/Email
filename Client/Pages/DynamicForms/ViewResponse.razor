@@ -17,7 +17,10 @@
             <span class="text-muted">Submitted by @responderName</span>
         }
     </div>
-
+    <div class="btn-group">
+        <a class="btn btn-outline-primary @(prevId == null ? "disabled" : null)" href="@($"/forms/{FormId}/responses/{prevId}")" @(prevId == null ? "tabindex=-1 aria-disabled=true" : null)>Previous</a>
+        <a class="btn btn-outline-primary @(nextId == null ? "disabled" : null)" href="@($"/forms/{FormId}/responses/{nextId}")" @(nextId == null ? "tabindex=-1 aria-disabled=true" : null)>Next</a>
+    </div>
 </div>
 @if (!string.IsNullOrEmpty(deletedMessage))
 {
@@ -80,6 +83,8 @@ else
     private string? responderName;
     private IJSObjectReference? exportModule;
     private string? deletedMessage;
+    private int? prevId;
+    private int? nextId;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -124,9 +129,18 @@ else
             {
                 responderName = respName?.ToString();
             }
+            var neighbors = await Http.GetFromJsonAsync<NeighborInfo>($"api/forms/{FormId}/responses/{ResponseId}/neighbors");
+            prevId = neighbors?.previous;
+            nextId = neighbors?.next;
             exportModule = await JS.InvokeAsync<IJSObjectReference>("import", "/js/exportHelper.js");
             StateHasChanged();
         }
+    }
+
+    private class NeighborInfo
+    {
+        public int? previous { get; set; }
+        public int? next { get; set; }
     }
 
     RenderFragment DisplayValue(FormField field) => builder =>

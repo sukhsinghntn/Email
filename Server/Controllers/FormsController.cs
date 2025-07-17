@@ -85,6 +85,24 @@ namespace DynamicFormsApp.Server.Controllers
             return Ok(row);
         }
 
+        [HttpGet("{id}/responses/{responseId}/neighbors")]
+        public async Task<ActionResult> GetResponseNeighbors(int id, int responseId)
+        {
+            if (!Request.Cookies.TryGetValue("userName", out var user) || string.IsNullOrEmpty(user))
+            {
+                return Unauthorized();
+            }
+
+            var form = await _svc.GetFormAsync(id);
+            if (!form.IsActive && form.CreatedBy != user)
+            {
+                return await FormUnavailable(form);
+            }
+
+            var (prev, next) = await _svc.GetAdjacentResponseIdsAsync(id, responseId, user);
+            return Ok(new { previous = prev, next });
+        }
+
 
         // GET /api/forms/{id}
         [HttpGet("{id}")]
@@ -216,6 +234,18 @@ namespace DynamicFormsApp.Server.Controllers
             }
 
             await _svc.ShareFormAsync(id, user, dto.UserName);
+
+            var target = await _userSvc.GetUserData(dto.UserName);
+            var form = await _svc.GetFormAsync(id);
+            var sender = await _userSvc.GetUserData(user);
+            var sharedBy = sender?.DisplayName ?? user;
+            if (target != null && !string.IsNullOrEmpty(target.Email))
+            {
+                var firstName = target.DisplayName?.Split(' ').FirstOrDefault() ?? target.UserName;
+                var ownerEmail = sender?.Email ?? string.Empty;
+                await _emailSvc.SendFormShareNotification(target.Email, firstName, form.Name, form.Description, form.Id, sharedBy, ownerEmail);
+            }
+
             return NoContent();
         }
 

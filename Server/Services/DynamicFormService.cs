@@ -527,6 +527,61 @@ namespace DynamicFormsApp.Server.Services
             return row;
         }
 
+        public async Task<(int? Previous, int? Next)> GetAdjacentResponseIdsAsync(int formId, int responseId, string user)
+        {
+            if (!await HasResponseAccessAsync(formId, user))
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            var form = await _db.Forms.FindAsync(formId)
+                       ?? throw new InvalidOperationException("Form not found");
+            if (!form.IsActive && form.CreatedBy != user)
+            {
+                throw new InvalidOperationException("Form inactive");
+            }
+
+            var rawName = SanitizeKey(form.Name);
+            var tableName = $"Form_{formId}_{rawName}";
+
+            using var conn = _db.Database.GetDbConnection();
+            if (conn.State != System.Data.ConnectionState.Open)
+                await conn.OpenAsync();
+
+            int? prev = null;
+            int? next = null;
+
+            using (var cmdPrev = conn.CreateCommand())
+            {
+                cmdPrev.CommandText = $"SELECT TOP 1 ResponseId FROM [{tableName}] WHERE ResponseId < @id ORDER BY ResponseId DESC;";
+                var p = cmdPrev.CreateParameter();
+                p.ParameterName = "@id";
+                p.Value = responseId;
+                cmdPrev.Parameters.Add(p);
+                var result = await cmdPrev.ExecuteScalarAsync();
+                if (result != null && result != DBNull.Value)
+                {
+                    prev = Convert.ToInt32(result);
+                }
+            }
+
+            using (var cmdNext = conn.CreateCommand())
+            {
+                cmdNext.CommandText = $"SELECT TOP 1 ResponseId FROM [{tableName}] WHERE ResponseId > @id ORDER BY ResponseId ASC;";
+                var n = cmdNext.CreateParameter();
+                n.ParameterName = "@id";
+                n.Value = responseId;
+                cmdNext.Parameters.Add(n);
+                var result = await cmdNext.ExecuteScalarAsync();
+                if (result != null && result != DBNull.Value)
+                {
+                    next = Convert.ToInt32(result);
+                }
+            }
+
+            return (prev, next);
+        }
+
         private string MapToSqlType(string fieldType) => fieldType switch
         {
             "number" => "FLOAT",
